@@ -1,0 +1,7 @@
+**
+!Dockerfile
+!pyproject.toml
+!poetry.lock
+!main.py
+!payment_gateway_api/
+!payment_gateway_api/**/*.py

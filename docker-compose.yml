@@ -1,0 +1,37 @@
+services:
+  bank_simulator:
+    image: bbyars/mountebank:2.8.1
+    ports:
+      - "127.0.0.1:8080:8080"
+    command: --configfile /imposters/bank_simulator.ejs --allowInjection
+    volumes:
+      - type: bind
+        source: ./imposters
+        target: /imposters
+        read_only: true
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - "require('http').get('http://127.0.0.1:8080/', r => process.exit(r.statusCode === 400 ? 0 : 1)).on('error', () => process.exit(1))"
+      interval: 2s
+      timeout: 2s
+      retries: 15
+      start_period: 5s
+
+  api:
+    build: .
+    ports:
+      - "127.0.0.1:8000:8000"
+    environment:
+      BANK_URL: http://bank_simulator:8080
+      BANK_CONNECT_TIMEOUT: "${BANK_CONNECT_TIMEOUT:-1}"
+      BANK_READ_TIMEOUT: "${BANK_READ_TIMEOUT:-2}"
+      BANK_WRITE_TIMEOUT: "${BANK_WRITE_TIMEOUT:-2}"
+      BANK_POOL_TIMEOUT: "${BANK_POOL_TIMEOUT:-1}"
+      BANK_DEADLINE: "${BANK_DEADLINE:-3}"
+      LOG_LEVEL: "${LOG_LEVEL:-INFO}"
+    depends_on:
+      bank_simulator:
+        condition: service_healthy
